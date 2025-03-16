@@ -1,0 +1,16 @@
+[debug] [2025-03-16T06:38:16.032Z] ----------------------------------------------------------------------
+[debug] [2025-03-16T06:38:16.038Z] Command:       /opt/homebrew/Cellar/node/23.10.0/bin/node /usr/local/bin/firebase deploy --only firestore:rules
+[debug] [2025-03-16T06:38:16.039Z] CLI Version:   13.29.1
+[debug] [2025-03-16T06:38:16.039Z] Platform:      darwin
+[debug] [2025-03-16T06:38:16.039Z] Node Version:  v23.10.0
+[debug] [2025-03-16T06:38:16.039Z] Time:          Sun Mar 16 2025 12:08:16 GMT+0530 (India Standard Time)
+[debug] [2025-03-16T06:38:16.039Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-03-16T06:38:16.095Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-03-16T06:38:16.095Z] > authorizing via signed-in user (m.misbahkhursheed@gmail.com)
+[debug] [2025-03-16T06:38:16.096Z] [iam] checking project crazy-1a978 for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2025-03-16T06:38:16.096Z] Checked if tokens are valid: true, expires at: 1742108637327
+[debug] [2025-03-16T06:38:16.096Z] Checked if tokens are valid: true, expires at: 1742108637327
+[debug] [2025-03-16T06:38:16.097Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/crazy-1a978:testIamPermissions [none]
+[debug] [2025-03-16T06:38:16.097Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/crazy-1a978:testIamPermissions x-goog-quota-user=projects/crazy-1a978
+[debug] [2025-03-16T06:38:16.097Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/crazy-1a978:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
