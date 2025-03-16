@@ -109,9 +109,10 @@ export default function Jokes() {
           currentJoke.votedBy = {};
         }
   
-        if (currentJoke.votedBy[userId]) {
+        if (currentJoke.votedBy && currentJoke.votedBy[userId]) {
           throw new Error("You've already voted on this joke!");
         }
+        
   
         const updatedJoke = {
           ...currentJoke,
