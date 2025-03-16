@@ -30,12 +30,18 @@ export default function Jokes() {
         querySnapshot.forEach((doc) => {
           const userJokes = (doc.data().jokes || []).map((joke) => ({
             ...joke,
-            userId: doc.id, 
+            
+            timestamp: {
+              seconds: joke.timestamp?.seconds || 0,
+              nanoseconds: joke.timestamp?.nanoseconds || 0,
+            },
+            userId: doc.id,
           }));
           jokesArray = [...jokesArray, ...userJokes];
         });
     
-        jokesArray.sort((a, b) => b.timestamp - a.timestamp);
+        // Sort using timestamp seconds
+        jokesArray.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
         setJokes(jokesArray);
       } catch (error) {
         console.error("Error fetching jokes:", error);
@@ -67,12 +73,11 @@ export default function Jokes() {
     if (error) {
       const timer = setTimeout(() => {
         setError(null);
-      }, 3000); // 3 seconds
+      }, 3000);
 
       return () => clearTimeout(timer);
     }
   }, [error]);
-
 
   const handleVote = async (joke, type) => {
     if (!auth.currentUser) {
@@ -87,60 +92,95 @@ export default function Jokes() {
     try {
       await runTransaction(db, async (transaction) => {
         const docSnap = await transaction.get(jokeRef);
-        if (!docSnap.exists()) {
-          throw new Error("Joke not found!");
-        }
+        if (!docSnap.exists()) throw new Error("Joke not found!");
   
-        let jokesData = docSnap.data().jokes || [];
+        const jokesData = docSnap.data().jokes || [];
   
+        // Find the joke in the Firestore document
         const jokeIndex = jokesData.findIndex(
-          (j) =>
-            j.text === joke.text &&
-            j.timestamp?.seconds === joke.timestamp?.seconds
+          (j) => j.text === joke.text && j.timestamp?.seconds === joke.timestamp.seconds
         );
   
-        if (jokeIndex === -1) {
-          throw new Error("Joke not found!");
-        }
+        if (jokeIndex === -1) throw new Error("Joke not found!");
   
         const currentJoke = jokesData[jokeIndex];
   
-        if (!currentJoke.votedBy) {
-          currentJoke.votedBy = {};
+        // Ensure votedBy is always an object
+        currentJoke.votedBy = currentJoke.votedBy || {};
+  
+        let hasVotedElsewhere = false;
+  
+        // Check if the user has voted on any other joke
+        jokesData.forEach((j) => {
+          if (j.votedBy?.[userId] && j.text !== joke.text) {
+            hasVotedElsewhere = true;
+            delete j.votedBy[userId]; // Remove previous vote
+            j.upvote = j.upvote || 0;
+            j.downvote = j.downvote || 0;
+            if (j.votedBy[userId] === "up") j.upvote--;
+            if (j.votedBy[userId] === "down") j.downvote--;
+          }
+        });
+  
+        // If the user already voted on this joke, allow them to switch vote
+        if (currentJoke.votedBy[userId]) {
+          if (currentJoke.votedBy[userId] === type) {
+            throw new Error("You've already voted this way!");
+          }
+  
+          // Revert previous vote
+          if (currentJoke.votedBy[userId] === "up") currentJoke.upvote--;
+          if (currentJoke.votedBy[userId] === "down") currentJoke.downvote--;
+  
+          // Apply new vote
+          currentJoke.votedBy[userId] = type;
+          if (type === "up") currentJoke.upvote++;
+          if (type === "down") currentJoke.downvote++;
+        } else {
+          // If it's a fresh vote
+          currentJoke.votedBy[userId] = type;
+          if (type === "up") currentJoke.upvote++;
+          if (type === "down") currentJoke.downvote++;
         }
   
-        if (currentJoke.votedBy && currentJoke.votedBy[userId]) {
-          throw new Error("You've already voted on this joke!");
-        }
-        
-  
-        const updatedJoke = {
-          ...currentJoke,
-          upvote:
-            type === "up"
-              ? (currentJoke.upvote || 0) + 1
-              : currentJoke.upvote || 0,
-          downvote:
-            type === "down"
-              ? (currentJoke.downvote || 0) + 1
-              : currentJoke.downvote || 0,
-          votedBy: {
-            ...currentJoke.votedBy,
-            [userId]: type,
-          },
-        };
-  
-        jokesData[jokeIndex] = updatedJoke;
-  
+        // Update Firestore
         transaction.update(jokeRef, { jokes: jokesData });
       });
   
-      setError(null);
+      // Refresh UI after vote
+      const updatedJokes = jokes.map((j) => {
+        if (j.text === joke.text && j.timestamp.seconds === joke.timestamp.seconds) {
+          return {
+            ...j,
+            upvote: type === "up" ? j.upvote + 1 : j.upvote,
+            downvote: type === "down" ? j.downvote + 1 : j.downvote,
+            votedBy: { ...j.votedBy, [userId]: type },
+          };
+        }
+  
+        // Remove previous vote from other jokes
+        if (j.votedBy?.[userId] && j.text !== joke.text) {
+          const updatedVotes = { ...j.votedBy };
+          delete updatedVotes[userId];
+  
+          return {
+            ...j,
+            upvote: updatedVotes[userId] === "up" ? j.upvote - 1 : j.upvote,
+            downvote: updatedVotes[userId] === "down" ? j.downvote - 1 : j.downvote,
+            votedBy: updatedVotes,
+          };
+        }
+  
+        return j;
+      });
+  
+      setJokes(updatedJokes);
     } catch (error) {
-      console.error("Error updating vote:", error);
-      setError(error.message || "Failed to update vote. Please try again.");
+      console.error("Transaction error:", error);
+      setError(error.message.includes("already voted") ? error.message : "Failed to update vote. Please try again.");
     }
   };
+  
   
   
   return (

@@ -126,7 +126,7 @@ export default function Dashboard() {
         <div className={styles.jokeInputWrapper}>
           <Textarea
             className={styles.jokeInput}
-            placeholder="Post a joke..."
+            placeholder="Post a dad joke..."
             value={jokeText}
             onChange={(e) => setJokeText(e.target.value)}
           />
